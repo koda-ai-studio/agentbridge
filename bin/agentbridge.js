@@ -17,6 +17,7 @@ import readline from "node:readline";
 import { review } from "../lib/review.js";
 import { demo } from "../lib/demo.js";
 import { stats, statsText } from "../lib/stats.js";
+import { digest, digestText } from "../lib/digest.js";
 const version = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 const [command, ...args] = process.argv.slice(2),
   cwd = process.cwd();
@@ -77,8 +78,9 @@ For people, two commands; your agents handle the rest:
   agentbridge onboard        set up this repository (once)
   agentbridge                asks about each thing that needs you (offers, decisions, finished work,
                              merged or duplicate tasks, stalled agents), one key per answer
-When you want more: agentbridge board (overview), assign "New work" --to codex|claude|TEAMMATE,
-  done TASK [--reason "why"], resume TASK (where a task stands and its next step).
+When you want more: agentbridge digest (what happened since you last looked: merged, handoffs,
+  decisions, findings, open work with PRs, what waits on you; --since 7d|DATE), board (overview),
+  assign "New work" --to codex|claude|TEAMMATE, done TASK [--reason "why"], resume TASK.
 New here? agentbridge demo shows a Claude-to-Codex handoff in a throwaway repository (nothing of
   yours changes). agentbridge stats [--since DATE] prints usage counts for pilot feedback.
 Everything below is for agents and scripts.
@@ -107,6 +109,8 @@ Everything below is for agents and scripts.
   finding resolve ID FINDING-ID --actor NAME --why "Resolution"
   evidence add ID "command" pass|fail|skipped [--notes TEXT] (manual only)
   inbox --actor NAME [--since ISO|last] [--format json|text]   (text in a terminal, JSON otherwise)
+  digest [--since last|7d|ISO] [--peek] [--format json|text]   (catch-up from records and linked PRs; default since your
+      last digest, else 7 days; --peek keeps your place)
   check PATH... --actor NAME   (exit 1 when another owner's active scope covers a path)
   board [--format text|json]                       (team view: owners, offers, waiting for people, attention)
   approvals [--verify] [--json]  (every approval; --verify checks signatures against the signer's GitHub signing keys)
@@ -406,7 +410,7 @@ try {
       break;
     case "finding":
       if (args[0] === "add")
-        pr(c.reportFinding(cwd, args[1], args[2], identity.resolveActor(cwd, flag("--by"))));
+        pr(c.reportFinding(cwd, args[1], args[2], identity.guardSession(identity.resolveActor(cwd, flag("--by") || flag("--actor") || identity.agentSession()?.agent || ""))));
       else if (args[0] === "resolve")
         pr(c.resolveFinding(cwd, args[1], args[2], actor(), flag("--why")));
       else throw Error("Unknown finding command");
@@ -507,6 +511,12 @@ try {
     case "context":
       pr(c.context(cwd, args[0]));
       break;
+    case "digest": {
+      const r = digest(cwd, actor(), { since: flag("--since"), advance: !args.includes("--peek") });
+      if (flag("--format") === "text" || (human && flag("--format") !== "json")) console.log(digestText(r));
+      else console.log(JSON.stringify(r, null, 2));
+      break;
+    }
     case "resume": {
       const r = team.resumeFor(cwd, actor(), args[0] && !args[0].startsWith("--") ? args[0] : "");
       if (flag("--format") === "text" || (human && flag("--format") !== "json")) console.log(team.resumeText(r));

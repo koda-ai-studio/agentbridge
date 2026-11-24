@@ -1,11 +1,11 @@
 ---
 name: agentbridge
-description: Coordinate with other agents and people on a shared repository through AgentBridge - see what you own, what others own, pending handoffs and project decisions; check paths before editing; claim work; leave status notes; hand work off. Use at the start of work in any Git repository where `agentbridge where` reports initialized true, before editing files there, when the user says "check the board" or "check the inbox", and before stopping.
+description: Coordinate with other agents and people on a shared repository through AgentBridge - see what you own, what others own, pending handoffs and project decisions; check paths before editing; claim work; leave status notes; hand work off; catch the user up. Use at the start of work in any Git repository where `agentbridge where` reports initialized true, before editing files there, when the user says "check the board" or "check the inbox", asks "what's new", "catch me up" or "what did I miss", and before stopping.
 ---
 
 # AgentBridge
 
-AgentBridge holds who owns which paths, handoffs, project decisions, findings and verification. It is not the issue tracker: descriptions and discussion stay in Jira, Linear or GitHub; link them with `--ref`.
+AgentBridge holds who owns which paths, handoffs, project decisions, findings and verification. It is not the issue tracker: descriptions and discussion stay in Jira, Linear or GitHub; link them with `--ref`. Write each fact once: the what and why live in the PR or issue, AgentBridge holds state plus a link, and you answer the user from both.
 
 Your actor name is your tool's name in lowercase (`claude`, `codex`, `cursor`) unless the user gave you another. Run commands from inside the checkout. If the `agentbridge` MCP tools are available, use them (same names, pass your checkout's absolute path as `cwd`) instead of the shell.
 
@@ -15,8 +15,12 @@ Your actor name is your tool's name in lowercase (`claude`, `codex`, `cursor`) u
    To continue a task (one you just received, or after a session ended): `agentbridge resume TASK` (or `agentbridge resume` for your latest open task) gives the goal, done bar, next step, branch and changed files, PR, accepted decisions, open findings and checks. Start from its `Next:` line rather than asking the user to re-explain.
 2. **Before editing:** `agentbridge check PATH... --actor ME`. Exit 1 means another owner's active task covers a path. Do not edit it, and do not work around a block with shell writes; tell the user which task and owner blocks you.
 3. **Claim the paths you will edit.** For a task you received without a scope: `agentbridge task scope TASK dir/a,dir/b-* --actor ME`. For new work: `agentbridge task add "Title" --criteria "Check one; Check two" --actor ME --scope dir/a,dir/b-* [--ref PROJ-142]`, then `agentbridge task status TASK in_progress --actor ME`. A trailing `*` matches by prefix. Unscoped work protects nothing and is flagged on the board.
-4. **Before stopping:** `agentbridge task note TASK "branch, PR, what's left" --actor ME`. One line, at most 200 characters; details go in the PR or tracker. When implementation is done: `agentbridge task status TASK implemented --actor ME`.
+4. **Before stopping:** `agentbridge task note TASK "PR #55 · CI green · waiting on review" --actor ME`. State plus a link, one line, at most 200 characters; never repeat the PR description. When implementation is done: `agentbridge task status TASK implemented --actor ME`.
 5. **Passing work on, only when the user asks** ("hand this to Codex", "assign it to alice"): `agentbridge task add "Title" --criteria "..." --to OTHER --scope ... --actor ME` for new work, or `agentbridge handoff offer TASK --actor ME --to OTHER --next "Exact next step, branch and PR"` for yours. Never create or offer tasks to others on your own initiative; suggest it to the user instead. Likewise only when the user asks: `agentbridge handoff decline TASK --actor ME --reason "..."` (an offer to you), `agentbridge handoff withdraw TASK --actor ME` (your offer), `agentbridge task cancel TASK --actor ME --reason "..."` (your task).
+
+## Catching the user up
+
+When the user asks what is new or what they missed, run `agentbridge digest --format text` (MCP: `digest`; add `--since 7d` or a date if they name one) and answer from it in a few plain sentences, leading with what waits on them. Do not write catch-up issues, notes or documents by hand, and do not create tasks that duplicate an issue or PR; link instead.
 
 ## Rules
 

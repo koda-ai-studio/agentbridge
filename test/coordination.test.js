@@ -311,7 +311,7 @@ test("MCP server exposes typed inbox, check, start_task, note and handoff tools 
   assert.equal(out.length, 11, "one reply per request, none for the notification, one parse error");
   assert.equal(by[1].result.protocolVersion, "2025-06-18");
   assert.deepEqual(by[1].result.capabilities, { tools: {} });
-  assert.deepEqual(by[2].result.tools.map((x) => x.name), ["inbox", "board", "check", "start_task", "set_scope", "note", "handoff_offer", "handoff_receive", "handoff_decline", "handoff_withdraw", "resume_task", "report_finding", "resolve_finding", "close_task", "cancel_task"]);
+  assert.deepEqual(by[2].result.tools.map((x) => x.name), ["inbox", "board", "check", "start_task", "set_scope", "note", "handoff_offer", "handoff_receive", "handoff_decline", "handoff_withdraw", "digest", "resume_task", "report_finding", "resolve_finding", "close_task", "cancel_task"]);
   const check = by[3].result.structuredContent;
   conforms(check, "check");
   assert.equal(check.allowed, false);
