@@ -26,6 +26,8 @@ cd your-repo && agentbridge onboard --solo   # just you and your agents: records
 cd your-repo && agentbridge onboard          # a team: one shared board on its own branch, identity from GitHub
 ```
 
+Team mode needs the [GitHub CLI](https://cli.github.com) logged in (`gh auth login`) and push access to the repository. Solo mode uses it too, for your name, when it is there.
+
 `onboard` does every setup step and reports each as done, already set, skipped or needs you: it moves existing in-repo records to the records branch, protects that branch on GitHub when you are a repository admin (no force-push or deletion, no bypass), points the agent skill, hooks and Codex MCP entry at the current install, and says when a newer version is available. It backs up any config it changes, and `--dry-run` shows the plan first. Teammates run the same command in their clone. Re-run it after updating.
 
 Then, as a person, in a normal terminal (not Claude Code's `!`, which runs inside the agent's session):
