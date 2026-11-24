@@ -375,10 +375,10 @@ test("two agents claiming the same file: the second claim is refused, so nobody 
   c.init(cwd);
   const first = c.addTask(cwd, "Fix pay", "ok", "claude", ["src/pay.js"], "", { exclusive: true });
   c.setStatus(cwd, first.id, "in_progress", "claude");
-  assert.throws(() => c.addTask(cwd, "Also pay", "ok", "codex", ["src/pay.js"], "", { exclusive: true }), /Scope overlaps active work owned by others: Fix pay \(claude/);
+  assert.throws(() => c.addTask(cwd, "Also pay", "ok", "codex", ["src/pay.js"], "", { exclusive: true }), /Someone else is already working on these files: "Fix pay" \(claude, [0-9a-f]{8}, src\/pay.js\)/);
   assert.equal(c.tasks(cwd).length, 1, "the refused claim leaves no task behind");
   assert.equal(co.checkPaths(cwd, "claude", ["src/pay.js"]).allowed, true, "the first owner can still edit");
   const other = c.addTask(cwd, "Docs", "ok", "codex", ["docs"], "", { exclusive: true });
-  assert.throws(() => c.setScope(cwd, other.id, "codex", ["src"]), /Scope overlaps/);
+  assert.throws(() => c.setScope(cwd, other.id, "codex", ["src"]), /Someone else is already working on these files/);
   assert.ok(c.addTask(cwd, "Later pay", "ok", "codex", ["src/pay.js"]), "planning overlapping work without claiming it is still allowed");
 });

@@ -8,6 +8,7 @@ import * as c from "../lib/core.js";
 import * as co from "../lib/coordination.js";
 import * as team from "../lib/team.js";
 import * as w from "../lib/workflow.js";
+import * as st from "../lib/store.js";
 import { git } from "../lib/git.js";
 import { conforms } from "./schema.js";
 
@@ -191,7 +192,7 @@ test("owners claim paths on received work; overlapping others' active work is re
   c.receive(cwd, handed.id, "codex");
   assert.equal(co.checkPaths(cwd, "claude", ["tests/test_paths.py"]).allowed, true, "unscoped work protects nothing");
   assert.throws(() => c.setScope(cwd, handed.id, "claude", ["tests"]), /owned by codex/);
-  assert.throws(() => c.setScope(cwd, handed.id, "codex", ["ui/lib/graph-layout.ts"]), /Canvas \(claude/);
+  assert.throws(() => c.setScope(cwd, handed.id, "codex", ["ui/lib/graph-layout.ts"]), /"Canvas" \(claude/);
   assert.throws(() => c.setScope(cwd, handed.id, "codex", []), /at least one/);
   const r = cli(cwd, ["task", "scope", handed.id, "tests/test_paths.py,tests/fixtures/*", "--actor", "codex"]);
   assert.equal(r.status, 0, r.stderr);
@@ -232,6 +233,13 @@ test("pre-commit check blocks commits touching others' paths, whoever wrote them
   const unknown = commit({ AGENTBRIDGE_ACTOR: "" });
   assert.equal(unknown.status, 0, "unknown committer is warned, not blocked");
   assert.match(unknown.stderr, /could not tell who is committing \(branch fix\/other\)[\s\S]*src\/canvas\.ts — claude/);
+  git(cwd, ["config", "agentbridge.login", "dana"]);
+  const person = commit({ AGENTBRIDGE_ACTOR: "" });
+  assert.equal(person.status, 1, "in a team clone, a person in their own terminal is their GitHub login");
+  assert.match(person.stderr, /commit blocked for dana \(from your GitHub login\)/);
+  git(cwd, ["config", "agentbridge.login", "claude"]);
+  assert.equal(commit({ AGENTBRIDGE_ACTOR: "" }).status, 0);
+  git(cwd, ["config", "--unset", "agentbridge.login"]);
   git(cwd, ["reset", "-q"]);
   fs.writeFileSync(path.join(cwd, "README.md"), "x");
   git(cwd, ["add", "README.md"]);
@@ -653,6 +661,22 @@ test("resume of built work points at the pull request, and hides verification ch
   assert.equal(hook({ CLAUDECODE: "1" }, "src/search.js"), 2);
 });
 
+test("a command waits for another process's short write lock, and clears one left by a process that died", async (t) => {
+  const cwd = repo(t);
+  const lockFile = path.join(st.root(cwd), "local", "write.lock");
+  fs.mkdirSync(path.dirname(lockFile), { recursive: true });
+  const dead = spawnSync(process.execPath, ["-e", "console.log(process.pid)"], { encoding: "utf8" }).stdout.trim();
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: Number(dead), host: os.hostname(), at: new Date().toISOString() }));
+  assert.ok(c.addTask(cwd, "After a crash", "ok", "claude").id, "a dead process's lock is cleared");
+  const { spawn } = await import("node:child_process");
+  const holder = spawn(process.execPath, ["-e", `const fs=require("fs");fs.writeFileSync(${JSON.stringify(lockFile)},JSON.stringify({pid:process.pid,host:require("os").hostname()}),{flag:"wx"});setTimeout(()=>fs.unlinkSync(${JSON.stringify(lockFile)}),700)`]);
+  while (!fs.existsSync(lockFile)) await new Promise((r) => setTimeout(r, 20));
+  const started = Date.now();
+  assert.ok(c.addTask(cwd, "While syncing", "ok", "claude").id, "a live holder is waited for");
+  assert.ok(Date.now() - started >= 300, "it waited");
+  await new Promise((r) => holder.on("exit", r));
+});
+
 test("the board catches two owners holding the same file (a race between clones) and says how to settle it", () => {
   const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "agentbridge-race-")));
   try {
@@ -660,7 +684,9 @@ test("the board catches two owners holding the same file (a race between clones)
     const first = c.addTask(cwd, "Pay", "ok", "claude", ["src/pay.js"]);
     c.setStatus(cwd, first.id, "in_progress", "claude");
     const second = c.addTask(cwd, "Pay again", "ok", "codex", ["src"]);
-    c.setStatus(cwd, second.id, "in_progress", "codex");
+    assert.throws(() => c.setStatus(cwd, second.id, "in_progress", "codex"), /claude claimed these files first \("Pay", [0-9a-f]{8}\)/, "starting work on files someone claimed first is refused");
+    assert.equal(team.board(cwd, { merged: null }).attention.filter((a) => a.task === second.id).length, 1, "a planned overlapping claim is flagged too");
+    st.mutate(cwd, second.id, (t) => { t.status = "in_progress"; });
     const b = team.board(cwd, { merged: null });
     const flagged = b.attention.filter((a) => a.reasons.some((x) => /also holds/.test(x)));
     assert.deepEqual(flagged.map((a) => a.task), [second.id], "only the later claim is flagged");

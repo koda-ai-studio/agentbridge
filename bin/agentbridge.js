@@ -172,7 +172,16 @@ try {
       break;
     case "sync": {
       const remote = flag("--remote") || "origin";
-      const r = args.includes("--init") ? sync.setupSync(cwd, { remote }) : sync.sync(cwd, { remote, acceptRewrite: args.includes("--accept-rewrite") });
+      let r;
+      for (let i = 0; ; i++) {
+        try {
+          r = args.includes("--init") ? sync.setupSync(cwd, { remote }) : sync.sync(cwd, { remote, acceptRewrite: args.includes("--accept-rewrite") });
+          break;
+        } catch (e) {
+          if (!/lock exists/.test(e.message) || i >= 20) throw e;
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500);
+        }
+      }
       if (!args.includes("--quiet"))
         console.log(
           human

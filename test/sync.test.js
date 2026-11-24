@@ -234,7 +234,7 @@ test("a claim pulls others' claims first when records are over a minute old; off
   fs.writeFileSync(last, "2026-01-01T00:00:00.000Z");
   const r = ab(bob, "task", "add", "Also pay", "--criteria", "Pays", "--actor", "bob", "--scope", "src");
   assert.notEqual(r.status, 0, "bob's stale clone learned of alice's claim before claiming");
-  assert.match(r.stderr, /Scope overlaps active work owned by others: Pay \(alice/);
+  assert.match(r.stderr, /Someone else is already working on these files: "Pay" \(alice/);
 
   git(bob, ["remote", "set-url", "origin", path.join(os.tmpdir(), "agentbridge-missing-remote.git")]);
   fs.writeFileSync(last, "2026-01-01T00:00:00.000Z");

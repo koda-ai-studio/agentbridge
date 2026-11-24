@@ -24,7 +24,7 @@ Your actor name is your tool's name in lowercase (`claude`, `codex`, `cursor`) u
 - Act only as yourself. AgentBridge detects your session and refuses other names, and records your session id on every action.
 - Propose project-wide decisions with `agentbridge decision propose "..." --why "..." --actor ME`. Only people accept decisions and work; never run `decision accept`, `accept` or `policy`. `agentbridge approvals --verify` shows who approved what and whether the signatures check out.
 - Report problems in others' work with `agentbridge finding add TASK "..." --by ME` (MCP: `report_finding`) instead of fixing their paths. Resolve findings on your own tasks with `agentbridge finding resolve TASK FINDING --why "how" --actor ME` (MCP: `resolve_finding`).
-- Claims sync first: when records are over a minute old, claiming files pulls others' claims before checking. If it warns that it could not sync, tell the user someone elsewhere may hold the files.
+- Claims sync first: claiming files pulls others' claims before checking. If it warns that it could not sync, tell the user someone elsewhere may hold the files.
 - When your pull request merges and no work remains, close your task (`agentbridge task close TASK`, or `--pr N`); that releases its files. The board and your prompt flag open tasks whose PR is already merged.
 - Files in your person's own tasks are yours to edit when they ask you to work on them; other agents' and people's files are not.
 - If another agent holds files you need (for example it stopped mid-task), never suggest running a command as that agent (`--actor codex`). Ask the user to move it from their own terminal, not with Claude Code's `!` prefix: `agentbridge assign TASK --to ME`.
