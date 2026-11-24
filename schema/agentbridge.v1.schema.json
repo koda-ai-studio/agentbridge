@@ -4,6 +4,415 @@
   "title": "AgentBridge records and agent contracts, version 1",
   "description": "Inbox, check, board and log outputs are complete agent-facing contracts. Task and project-decision records list the fields agents may rely on; stored records may carry additional fields.",
   "$defs": {
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "me",
+        "since",
+        "until",
+        "waitingOnYou",
+        "merged",
+        "finished",
+        "handoffs",
+        "decisions",
+        "findings",
+        "working",
+        "pullRequests"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "me": {
+          "type": "string"
+        },
+        "person": {
+          "type": "string"
+        },
+        "since": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "warning": {
+          "type": "string"
+        },
+        "waitingOnYou": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "merged": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "title",
+              "owner",
+              "pr",
+              "at"
+            ],
+            "properties": {
+              "task": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pr": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "finished": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "title",
+              "owner",
+              "how",
+              "at"
+            ],
+            "properties": {
+              "task": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "how": {
+                "enum": [
+                  "cancelled",
+                  "accepted done"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "handoffs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "title",
+              "from",
+              "to",
+              "state",
+              "at"
+            ],
+            "properties": {
+              "task": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "from": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "to": {
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "waiting",
+                  "accepted",
+                  "declined",
+                  "withdrawn",
+                  "closed"
+                ]
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "decisions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "accepted",
+            "proposed"
+          ],
+          "properties": {
+            "accepted": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "summary",
+                  "scope",
+                  "acceptedBy",
+                  "at"
+                ],
+                "properties": {
+                  "summary": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "enum": [
+                      "project",
+                      "task"
+                    ]
+                  },
+                  "task": {
+                    "type": "string"
+                  },
+                  "acceptedBy": {
+                    "type": "string"
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "proposed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "summary",
+                  "proposedBy"
+                ],
+                "properties": {
+                  "summary": {
+                    "type": "string"
+                  },
+                  "proposedBy": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "title",
+              "description",
+              "author",
+              "at"
+            ],
+            "properties": {
+              "task": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "author": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "working": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "owner",
+              "tasks"
+            ],
+            "properties": {
+              "owner": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "task",
+                    "title",
+                    "status",
+                    "pr",
+                    "changed"
+                  ],
+                  "properties": {
+                    "task": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "offeredTo": {
+                      "type": "string"
+                    },
+                    "ref": {
+                      "type": "string"
+                    },
+                    "pr": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "number",
+                            "state"
+                          ],
+                          "properties": {
+                            "number": {
+                              "type": "integer"
+                            },
+                            "state": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "enum": [
+                                    "open",
+                                    "draft",
+                                    "merged",
+                                    "closed"
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "changed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "pullRequests": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "open",
+                "withoutTask"
+              ],
+              "properties": {
+                "open": {
+                  "type": "integer"
+                },
+                "withoutTask": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "number",
+                      "title",
+                      "author",
+                      "draft"
+                    ],
+                    "properties": {
+                      "number": {
+                        "type": "integer"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "draft": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
     "resume": {
       "type": "object",
       "additionalProperties": false,

@@ -35,6 +35,7 @@ Then, as a person, in a normal terminal (not Claude Code's `!`, which runs insid
 | | |
 |---|---|
 | `agentbridge` | asks about each thing that needs you, one key per answer: accept an offer, accept a decision or finished work, close tasks whose PR merged, drop a duplicate, close or move a stalled agent's task |
+| `agentbridge digest` | what happened since you last looked: merged, handed off, decided, found, open work with its PRs, PRs nobody tracks, and what waits on you (`--since 7d`); or just ask your agent "what's new?" |
 | `agentbridge board` | who is doing what |
 | `agentbridge assign "New work" --to codex` | give work to one of your agents, or offer it to a teammate (`--to their-github-login`) |
 | `agentbridge resume TASK` | where a task stands and its next step |
