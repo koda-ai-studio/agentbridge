@@ -1,0 +1,42 @@
+{
+  "name": "agentbridge",
+  "version": "0.7.0",
+  "description": "Hand work between people and coding agents (Claude Code, Codex) on one Git repository without re-explaining it or editing each other's files.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "agentbridge": "./bin/agentbridge.js"
+  },
+  "scripts": {
+    "test": "node --import ./test/clean-env.js --test test/*.test.js",
+    "start": "node ./bin/agentbridge.js",
+    "bench": "node bench/scale.mjs 1000 && node bench/scale.mjs 200 20"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koda-ai-studio/agentbridge.git"
+  },
+  "homepage": "https://github.com/koda-ai-studio/agentbridge#readme",
+  "bugs": "https://github.com/koda-ai-studio/agentbridge/issues",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "coding-agents",
+    "handoff",
+    "mcp",
+    "git",
+    "collaboration"
+  ],
+  "files": [
+    "bin",
+    "lib",
+    "schema",
+    "skills",
+    "LICENSE",
+    "README.md"
+  ]
+}

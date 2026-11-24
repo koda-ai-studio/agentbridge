@@ -1,0 +1,1260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/koda-ai-studio/agentbridge/schema/agentbridge.v1.schema.json",
+  "title": "AgentBridge records and agent contracts, version 1",
+  "description": "Inbox, check, board and log outputs are complete agent-facing contracts. Task and project-decision records list the fields agents may rely on; stored records may carry additional fields.",
+  "$defs": {
+    "resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "task",
+        "short",
+        "goal",
+        "criteria",
+        "owner",
+        "status",
+        "statusWords",
+        "scope",
+        "note",
+        "next",
+        "code",
+        "pullRequest",
+        "decisions",
+        "pendingDecisions",
+        "openFindings",
+        "checks",
+        "related",
+        "freshness"
+      ],
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "task": {
+          "type": "string"
+        },
+        "short": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "statusWords": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ref": {
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "by": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "next": {
+          "type": "string"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "branch"
+              ],
+              "properties": {
+                "branch": {
+                  "type": "string"
+                },
+                "local": {
+                  "type": "boolean"
+                },
+                "head": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "base": {
+                  "type": "string"
+                },
+                "commitsAhead": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "changedFiles": {
+                  "type": "array",
+                  "maxItems": 30,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "moreFiles": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        "pullRequest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "number",
+                "merged"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer"
+                },
+                "merged": {
+                  "type": "boolean"
+                },
+                "mergedAt": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string"
+              },
+              "scope": {
+                "enum": [
+                  "project",
+                  "task"
+                ]
+              },
+              "acceptedBy": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pendingDecisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "proposedBy": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "openFindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "author": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "properties": {
+            "unresolved": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence": {
+              "type": "array",
+              "maxItems": 3
+            }
+          }
+        },
+        "related": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "moreRelated": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "freshness": {
+          "type": "object",
+          "properties": {
+            "taskUpdatedAt": {
+              "type": "string"
+            },
+            "recordsSyncedAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "unsharedChanges": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        },
+        "otherOpenTasks": {
+          "type": "array",
+          "maxItems": 9
+        }
+      }
+    },
+    "by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["via"],
+      "properties": {
+        "via": { "enum": ["terminal", "agent", "mcp"] },
+        "agent": { "type": "string" },
+        "session": { "type": "string" },
+        "github": { "type": "integer" },
+        "branch": { "type": "string" }
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z]+-(?:[a-f0-9]{8}|[a-f0-9]{8}-[a-f0-9-]{27})$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "^\\S+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "implemented",
+        "ready_for_review",
+        "needs_work",
+        "verified",
+        "done",
+        "stale",
+        "verified-unchecked",
+        "done-unchecked",
+        "merged",
+        "cancelled"
+      ]
+    },
+    "inbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "actor",
+        "at",
+        "since",
+        "owned",
+        "incoming",
+        "outgoing",
+        "doNotEdit",
+        "decisions",
+        "changes"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "actor": {
+          "$ref": "#/$defs/actor"
+        },
+        "at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "since": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owned": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "status",
+              "next",
+              "scope",
+              "openFindings"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/$defs/status"
+              },
+              "next": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "$ref": "#/$defs/scope"
+              },
+              "openFindings": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "note": {
+                "type": "string"
+              },
+              "ref": {
+                "$ref": "#/$defs/ref"
+              }
+            }
+          }
+        },
+        "incoming": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "from",
+              "next"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "from": {
+                "$ref": "#/$defs/actor"
+              },
+              "next": {
+                "type": "string"
+              },
+              "ref": {
+                "$ref": "#/$defs/ref"
+              }
+            }
+          }
+        },
+        "outgoing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "to"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "to": {
+                "$ref": "#/$defs/actor"
+              }
+            }
+          }
+        },
+        "doNotEdit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "owner",
+              "scope"
+            ],
+            "properties": {
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "$ref": "#/$defs/scope"
+              },
+              "note": {
+                "type": "string"
+              },
+              "ref": {
+                "$ref": "#/$defs/ref"
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "decisions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "accepted",
+            "proposed"
+          ],
+          "properties": {
+            "accepted": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "summary",
+                  "by"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "by": {
+                    "$ref": "#/$defs/actor"
+                  }
+                }
+              }
+            },
+            "proposed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "summary",
+                  "by"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "by": {
+                    "$ref": "#/$defs/actor"
+                  },
+                  "supersedes": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "changes": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "event",
+              "actor",
+              "at"
+            ],
+            "properties": {
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "event": {
+                "type": "string"
+              },
+              "actor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        },
+        "doNotEditTotal": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "All active scoped tasks owned by others; doNotEdit lists at most the 50 most recently updated. check always covers all."
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "actor",
+        "allowed",
+        "conflicts",
+        "owned",
+        "unclaimed"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "actor": {
+          "$ref": "#/$defs/actor"
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "task",
+              "title",
+              "owner",
+              "status"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "$ref": "#/$defs/status"
+              },
+              "hint": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "owned": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "task"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "task": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        },
+        "unclaimed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "schema",
+        "version",
+        "id",
+        "title",
+        "criteria",
+        "owner",
+        "scope",
+        "status",
+        "decisions",
+        "findings",
+        "reviews",
+        "implementations",
+        "runs",
+        "evidence",
+        "history",
+        "pendingHandoff"
+      ],
+      "properties": {
+        "schema": {
+          "const": 2
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "type": "string"
+        },
+        "owner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        },
+        "ref": {
+          "$ref": "#/$defs/ref"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "text"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "note": {
+          "type": "object",
+          "required": [
+            "text",
+            "by",
+            "at"
+          ],
+          "properties": {
+            "text": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "by": {
+              "$ref": "#/$defs/actor"
+            },
+            "at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          }
+        },
+        "pendingHandoff": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "from",
+            "to",
+            "next",
+            "at"
+          ],
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/actor"
+            },
+            "to": {
+              "$ref": "#/$defs/actor"
+            },
+            "next": {
+              "type": "string"
+            },
+            "at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "description",
+              "status",
+              "at"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "description": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "open",
+                  "resolved"
+                ]
+              },
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "at",
+              "event"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "event": {
+                "type": "string"
+              },
+              "by": {
+                "$ref": "#/$defs/by"
+              }
+            }
+          }
+        },
+        "decisions": {
+          "type": "array"
+        },
+        "reviews": {
+          "type": "array"
+        },
+        "implementations": {
+          "type": "array"
+        },
+        "runs": {
+          "type": "array"
+        },
+        "evidence": {
+          "type": "array"
+        }
+      }
+    },
+    "projectDecision": {
+      "type": "object",
+      "required": [
+        "id",
+        "scope",
+        "version",
+        "summary",
+        "rationale",
+        "proposedBy",
+        "supersedes",
+        "status",
+        "at",
+        "history"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "scope": {
+          "const": "project"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "summary": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "proposedBy": {
+          "$ref": "#/$defs/actor"
+        },
+        "supersedes": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "accepted",
+            "superseded"
+          ]
+        },
+        "acceptedBy": {
+          "$ref": "#/$defs/actor"
+        },
+        "supersededBy": {
+          "$ref": "#/$defs/id"
+        },
+        "at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "history": {
+          "type": "array"
+        }
+      }
+    },
+    "board": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "at",
+        "people",
+        "unowned",
+        "waitingForPeople",
+        "attention",
+        "done"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "people": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "actor",
+              "tasks",
+              "offered"
+            ],
+            "properties": {
+              "actor": {
+                "$ref": "#/$defs/actor"
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "status",
+                    "scope",
+                    "openFindings"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "$ref": "#/$defs/status"
+                    },
+                    "scope": {
+                      "$ref": "#/$defs/scope"
+                    },
+                    "openFindings": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "ref": {
+                      "$ref": "#/$defs/ref"
+                    },
+                    "offeredTo": {
+                      "$ref": "#/$defs/actor"
+                    }
+                  }
+                }
+              },
+              "offered": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "from",
+                    "next",
+                    "at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/$defs/actor"
+                    },
+                    "next": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "$ref": "#/$defs/timestamp"
+                    },
+                    "ref": {
+                      "$ref": "#/$defs/ref"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "unowned": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "status",
+              "scope",
+              "openFindings"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/$defs/status"
+              },
+              "scope": {
+                "$ref": "#/$defs/scope"
+              },
+              "openFindings": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "note": {
+                "type": "string"
+              },
+              "ref": {
+                "$ref": "#/$defs/ref"
+              },
+              "offeredTo": {
+                "$ref": "#/$defs/actor"
+              }
+            }
+          }
+        },
+        "waitingForPeople": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decisions",
+            "acceptance"
+          ],
+          "properties": {
+            "decisions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "summary",
+                  "by"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "by": {
+                    "$ref": "#/$defs/actor"
+                  }
+                }
+              }
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "task",
+                  "title",
+                  "owner"
+                ],
+                "properties": {
+                  "task": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "attention": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task",
+              "title",
+              "owner",
+              "reasons"
+            ],
+            "properties": {
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "done": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "merged": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mergedOpen": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cancelled": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "since",
+        "actor",
+        "total",
+        "entries"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "since": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "actor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "at",
+              "actor",
+              "event",
+              "title",
+              "detail"
+            ],
+            "properties": {
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "actor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "event": {
+                "type": "string"
+              },
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "decision": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "detail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

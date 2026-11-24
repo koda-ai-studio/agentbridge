@@ -1,0 +1,18 @@
+name: Bug
+description: Something did not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected, and what you got (paste the output).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versions
+      description: "`agentbridge --version`, `node --version`, OS, and Claude Code / Codex version if relevant"
+    validations:
+      required: true

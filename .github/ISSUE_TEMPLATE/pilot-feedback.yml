@@ -1,0 +1,29 @@
+name: Pilot feedback
+description: How AgentBridge worked (or didn't) on your repository
+labels: [feedback]
+body:
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup
+      description: How long did install and `agentbridge onboard` take? Where did you get stuck?
+  - type: textarea
+    id: handoff
+    attributes:
+      label: Handoffs
+      description: Did an agent or teammate pick up work without you re-explaining it? What was missing?
+  - type: textarea
+    id: blocks
+    attributes:
+      label: Wrong or annoying blocks
+      description: Was an edit or commit blocked when it should not have been, or allowed when it should have been blocked?
+  - type: textarea
+    id: stats
+    attributes:
+      label: agentbridge stats
+      description: Paste the output (counts and actor names only).
+      render: text
+  - type: input
+    id: keep
+    attributes:
+      label: Would you keep using it? Why or why not?
