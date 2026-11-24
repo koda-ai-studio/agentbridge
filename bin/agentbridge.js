@@ -156,7 +156,7 @@ try {
       break;
     case "stats": {
       const r = stats(cwd, { since: flag("--since") });
-      if (human && flag("--format") !== "json") console.log(statsText(r));
+      if (flag("--format") === "text" || (human && flag("--format") !== "json")) console.log(statsText(r));
       else console.log(JSON.stringify(r, null, 2));
       break;
     }
@@ -447,7 +447,7 @@ try {
       } catch {
         throw Error("Hook input must be JSON on stdin");
       }
-      const hookActor = identity.resolveActor(cwd, flag("--actor"));
+      const hookActor = identity.resolveActor(cwd, flag("--actor") || identity.agentSession()?.agent || "");
       if (args[0] === "prompt") {
         sync.autoSync(cwd, bin, { minIntervalMs: 60000 });
         const text = agents.promptUpdate(input, hookActor);
@@ -500,7 +500,7 @@ try {
       break;
     case "resume": {
       const r = team.resumeFor(cwd, actor(), args[0] && !args[0].startsWith("--") ? args[0] : "");
-      if (human) console.log(team.resumeText(r));
+      if (flag("--format") === "text" || (human && flag("--format") !== "json")) console.log(team.resumeText(r));
       else console.log(JSON.stringify(r, null, 2));
       break;
     }

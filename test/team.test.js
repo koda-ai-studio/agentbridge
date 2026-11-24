@@ -94,7 +94,7 @@ test("board shows each owner's work, pending offers, what waits for a person and
   assert.equal(team.board(cwd).people.find((p) => p.actor === "claude").tasks.find((x) => x.id === canvas.id).note.length, 200, "JSON keeps the full note");
   const text = cli(cwd, ["board"]).stdout;
   assert.ok(text.includes(`${"y".repeat(119)}…`) && !text.includes("y".repeat(120)), "text clips long notes");
-  for (const s of ["← offered by claude, not yet accepted: E2E", "[not started] E2E → offered to codex", "Unowned", "decide: Mobile first (proposed by bob): agentbridge decision accept ", "Flaky test (codex): sent back for more work; its owner continues it; 1 open finding", "(accept: agentbridge handoff receive ", "1 task done."])
+  for (const s of ["← offered by claude, not yet accepted: E2E", "[not started] E2E → offered to codex", "Unowned", "decide: Mobile first (proposed by bob)", "Run agentbridge in your own terminal: it asks you about each of these", "Flaky test (codex): sent back for more work; its owner continues it; 1 open finding", "(accept: agentbridge handoff receive ", "1 task done."])
     assert.ok(text.includes(s), s);
   conforms(JSON.parse(cli(cwd, ["board", "--format", "json"]).stdout), "board");
   assert.notEqual(cli(cwd, ["board", "--format", "xml"]).status, 0);
@@ -628,6 +628,29 @@ test("resume gives the next agent or person one packet: goal, next step, code, P
   assert.match(text, /Open findings:\n  - Rounding off by a cent \(claude/);
   assert.match(text, /Records are local to this machine$/);
   assert.equal(JSON.parse(cli(cwd, ["resume", short]).stdout).task, task.id);
+});
+
+test("resume of built work points at the pull request, and hides verification checks the task never used", (t) => {
+  const cwd = repo(t);
+  const task = c.addTask(cwd, "Search", "Finds items", "codex", ["src/search.js"]);
+  c.setStatus(cwd, task.id, "in_progress", "codex");
+  c.setStatus(cwd, task.id, "implemented", "codex");
+  const short = task.id.slice(5, 13);
+  let r = team.resume(cwd, task.id, { merged: null });
+  assert.match(r.next, /^Built\. Open a pull request and note its number/);
+  assert.deepEqual(r.checks.unresolved, [], "no evidence, runs or reviews: no pipeline checks to chase");
+  assert.doesNotMatch(team.resumeText(r), /Checks not yet satisfied/);
+  c.note(cwd, task.id, "codex", "PR #40 open");
+  r = team.resume(cwd, task.id, { merged: null });
+  assert.equal(r.next, `Built. When PR #40 merges, close the task: agentbridge task close ${short}`);
+  assert.match(cli(cwd, ["resume", short, "--format", "text"]).stdout, /^[0-9a-f]{8}  "Search"  \[built, owner codex\]\nNext: Built\. When PR #40 merges/);
+  assert.match(cli(cwd, ["stats", "--format", "text"]).stdout, /^AgentBridge usage/);
+  const hook = (session, file) => spawnSync(process.execPath, [path.resolve("bin/agentbridge.js"), "hook", "pre-edit"], {
+    cwd, encoding: "utf8", timeout: 15000, input: JSON.stringify({ tool_name: "Edit", tool_input: { file_path: path.join(cwd, file) } }),
+    env: { ...process.env, CLAUDECODE: "", CLAUDE_CODE_SESSION_ID: "", CODEX_THREAD_ID: "", AI_AGENT: "", ...session },
+  }).status;
+  assert.equal(hook({ CODEX_THREAD_ID: "t1" }, "src/search.js"), 0, "without --actor the hook acts as the session's agent");
+  assert.equal(hook({ CLAUDECODE: "1" }, "src/search.js"), 2);
 });
 
 test("the board catches two owners holding the same file (a race between clones) and says how to settle it", () => {
