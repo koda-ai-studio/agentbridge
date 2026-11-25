@@ -6,6 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import * as c from "../lib/core.js";
 import * as co from "../lib/coordination.js";
+import * as team from "../lib/team.js";
 import * as s from "../lib/store.js";
 import * as w from "../lib/workflow.js";
 import { git } from "../lib/git.js";
@@ -217,6 +218,7 @@ const cli = (cwd, args, input) =>
 
 test("Claude Code pre-edit hook blocks edits to another owner's paths and allows everything else", (t) => {
   const { cwd, canvas } = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const hook = (actor, tool, input, from = cwd) =>
     cli(from, ["hook", "pre-edit", "--actor", actor], JSON.stringify({ hook_event_name: "PreToolUse", cwd: from, tool_name: tool, tool_input: input }));
   const canvasFile = path.join(cwd, "ui/lib/graph-layout.ts");
@@ -262,6 +264,7 @@ test("Claude Code pre-edit hook blocks edits to another owner's paths and allows
 
 test("a person's own agents may edit that person's files; other people and sibling agents may not", (t) => {
   const { cwd } = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const mine = c.addTask(cwd, "Docs", "Clear", "dana", ["docs"]);
   const agentWork = c.addTask(cwd, "Docs site", "Builds", "dana/codex", ["site"]);
   const allowed = (actor, p) => co.checkPaths(cwd, actor, [p]).allowed;

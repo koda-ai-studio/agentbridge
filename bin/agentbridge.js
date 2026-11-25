@@ -112,16 +112,18 @@ Everything below is for agents and scripts.
   digest [--since last|7d|ISO] [--peek] [--format json|text]   (catch-up from records and linked PRs; default since your
       last digest, else 7 days; --peek keeps your place)
   check PATH... --actor NAME   (exit 1 when another owner's active scope covers a path)
+  release ID --reason "Why"    (person only: free the files a task holds, e.g. a stale claim; the owner sees why)
+  policy ownership warn|block  (person only: warn (default) lets agents edit others' files after telling them; block refuses)
   board [--format text|json]                       (team view: owners, offers, waiting for people, attention)
   approvals [--verify] [--json]  (every approval; --verify checks signatures against the signer's GitHub signing keys)
   policy signed-approvals required|optional --actor NAME   (person only; required refuses unsigned approvals)
   log [--since 7d|ISO] [--actor NAME] [--limit N] [--format text|json]   (team audit trail, newest first)
   pr summary ID | pr publish ID --pr N   (publish posts a PR comment and an "agentbridge" commit status via gh)
   context ID | handoff ID
-  hook pre-edit --actor NAME   (Claude Code / Codex PreToolUse hook; blocks edits to paths others own)
+  hook pre-edit --actor NAME   (Claude Code / Codex PreToolUse hook; warns, or blocks under policy ownership block)
   hook prompt --actor NAME     (Claude Code / Codex UserPromptSubmit hook; adds new handoffs and changes to the prompt)
   hook install-git             (Git pre-commit check, chained before any existing hook)
-  hook pre-commit              (blocks commits touching paths others own; actor from AGENTBRIDGE_ACTOR or an <actor>/ branch)
+  hook pre-commit              (warns about, or blocks, commits touching paths others own; actor from AGENTBRIDGE_ACTOR or an <actor>/ branch)
   mcp --actor NAME             (MCP server over stdio: inbox, check, start_task, note, handoffs)
   handoff offer ID --actor alice --to bob --next "Review and test"
   handoff receive ID --actor bob
@@ -469,6 +471,7 @@ try {
       }
       const r = agents.preEdit(input, hookActor);
       if (r.message) console.error(r.message);
+      if (r.context) console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: r.context } }));
       process.exitCode = r.exit;
       break;
     }
@@ -482,9 +485,17 @@ try {
       break;
     }
     case "policy": {
+      if (args[0] === "ownership" && c.ownershipModes.includes(args[1])) {
+        pr(team.setPolicy(cwd, "ownership", args[1], person()));
+        break;
+      }
       if (args[0] !== "signed-approvals" || !["required", "optional"].includes(args[1]))
-        throw Error("Use: policy signed-approvals required|optional --actor NAME");
+        throw Error("Use: policy ownership warn|block, or policy signed-approvals required|optional");
       pr(team.setApprovalPolicy(cwd, args[1], person()));
+      break;
+    }
+    case "release": {
+      pr(c.release(cwd, args[0], person(), flag("--reason")));
       break;
     }
     case "board": {
