@@ -157,3 +157,13 @@ test("an owner editing its own files keeps an old claim from going idle", (t) =>
   assert.equal(c.task(cwd, task.id).history.at(-1).event, "active");
   assert.equal(co.checkPaths(cwd, "codex", ["src/pay.js"]).allowed, false, "held again once its owner is editing");
 });
+
+test("help shows the core loop; help all lists every command, older forms marked", (t) => {
+  const cwd = repo(t);
+  const short = cli(cwd, ["--help"]).stdout;
+  assert.match(short, /release TASK --reason/);
+  assert.match(short, /policy ownership warn\|block/);
+  assert.doesNotMatch(short, /test configure|pr publish|approvals \[--verify\]/, "optional verification stays out of the short help");
+  const all = cli(cwd, ["help", "all"]).stdout;
+  for (const cmd of ["test configure", "pr publish", "approvals", "release ID", "resolve-merge", "Older forms: task close"]) assert.ok(all.includes(cmd), cmd);
+});
