@@ -123,3 +123,37 @@ test("a person releases a stale claim with a reason; the owner sees who and why"
   c.cancel(cwd, task.id, "claude", "done");
   assert.match(cli(cwd, ["release", short, "--reason", "x", "--actor", "bob"]).stderr, /already cancelled/);
 });
+
+test("editing claims what an agent actually touches, only when it has exactly one task in progress", (t) => {
+  const cwd = repo(t);
+  fs.writeFileSync(path.join(cwd, "src/cart.js"), "export {};\n");
+  assert.equal(editHook(cwd, "codex", "src/cart.js").stdout, "", "no task in progress: nothing is guessed");
+  const task = c.addTask(cwd, "Cart totals", "ok", "codex", ["src/pay.js"]);
+  c.setStatus(cwd, task.id, "in_progress", "codex");
+  const r = editHook(cwd, "codex", "src/cart.js");
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, /added src\/cart\.js to your task "Cart totals"/);
+  const after = c.task(cwd, task.id);
+  assert.deepEqual(after.scope, ["src/pay.js", "src/cart.js"]);
+  assert.deepEqual([after.history.at(-1).event, after.history.at(-1).added], ["scope_inferred", ["src/cart.js"]]);
+  assert.equal(co.checkPaths(cwd, "claude", ["src/cart.js"]).allowed, false, "others now see who is on it");
+  assert.equal(editHook(cwd, "codex", "src/cart.js").stdout, "", "editing it again adds nothing");
+  assert.equal(c.task(cwd, task.id).version, after.version, "and writes nothing while the claim is fresh");
+  const second = c.addTask(cwd, "Docs", "ok", "codex", ["docs"]);
+  c.setStatus(cwd, second.id, "in_progress", "codex");
+  fs.writeFileSync(path.join(cwd, "src/tax.js"), "export {};\n");
+  assert.equal(editHook(cwd, "codex", "src/tax.js").stdout, "", "two tasks in progress: ambiguous, so nothing is claimed");
+  assert.deepEqual(co.checkPaths(cwd, "claude", ["src/tax.js"]).unclaimed, ["src/tax.js"]);
+  assert.ok(!co.inbox(cwd, "claude").changes.some((x) => x.event === "active"));
+});
+
+test("an owner editing its own files keeps an old claim from going idle", (t) => {
+  const cwd = repo(t);
+  const task = c.addTask(cwd, "Fix pay", "ok", "claude", ["src/pay.js"]);
+  c.setStatus(cwd, task.id, "in_progress", "claude");
+  age(cwd, task.id, c.idleHours + 2);
+  assert.equal(co.checkPaths(cwd, "codex", ["src/pay.js"]).allowed, true, "idle before the owner touches it");
+  assert.equal(editHook(cwd, "claude", "src/pay.js").status, 0);
+  assert.equal(c.task(cwd, task.id).history.at(-1).event, "active");
+  assert.equal(co.checkPaths(cwd, "codex", ["src/pay.js"]).allowed, false, "held again once its owner is editing");
+});

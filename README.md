@@ -50,7 +50,7 @@ You don't need `--actor`: outside an agent session you act as your GitHub login,
 
 ## How it works
 
-Each task has an owner and a scope: the paths it is changing. Before an agent edits a file, a hook checks the scope of every open task.
+Each task has an owner and a scope: the paths it is changing. You don't have to list them: when an agent with one task in progress edits a file, the file joins that task. Before an agent edits a file, a hook checks the scope of every open task.
 
 - **Someone else's open task covers the file:** the agent is told, before the edit, who holds it, for which task, when it was last active, and the command that releases it. It tells you and goes ahead. A team that wants hard locks runs `agentbridge policy ownership block`, and then the edit and the commit are refused.
 - **Its pull request merged, or it has had no activity for a day:** the file is free, and the agent is told why.

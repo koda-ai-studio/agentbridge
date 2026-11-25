@@ -470,6 +470,7 @@ try {
         break;
       }
       const r = agents.preEdit(input, hookActor);
+      if (r.changed) sync.autoSync(cwd, bin, { onlyIfChanged: true });
       if (r.message) console.error(r.message);
       if (r.context) console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: r.context } }));
       process.exitCode = r.exit;
