@@ -363,7 +363,14 @@ if (a[0] === "pr" && a[1] === "view") {
   no(["task", "close", open, "--actor", "alice"], /No merged pull request matches .*pass --pr N/);
   no(["task", "close", open, "--pr", "x1", "--actor", "alice"], /--pr must be a pull request number/);
   no(["task", "close", onBranch, "--actor", "bob"], /Only the owner \(alice\) can close/);
-  assert.equal(co.checkPaths(cwd, "bob", ["src/a.js"]).allowed, false, "an open task holds its files");
+  const freed = co.checkPaths(cwd, "bob", ["src/a.js"]);
+  assert.equal(freed.allowed, true, "an open task whose PR merged no longer blocks others");
+  assert.deepEqual(freed.released, [{ path: "src/a.js", task: onBranch, title: "Branch work", owner: "alice", pr: 7 }], "check says which merged PR released the files");
+  assert.equal(co.checkPaths(cwd, "bob", ["src/a.js"], { merged: null }).allowed, false, "without the merged-PR list the claim still holds");
+  const bobs = ab("task", "add", "Follow-up on a", "--criteria", "Works", "--actor", "bob", "--scope", "src/a.js");
+  assert.equal(ab("task", "status", bobs.id, "in_progress", "--actor", "bob").status, "in_progress", "others can claim and start on files whose task merged");
+  assert.equal(c.task(cwd, onBranch).status, "in_progress", "the merged task's record is left for its owner to close");
+  ab("task", "cancel", bobs.id, "--reason", "test", "--actor", "bob");
   const closed = ab("task", "close", onBranch, "--actor", "alice");
   assert.equal(closed.status, "merged");
   assert.deepEqual(closed.history.at(-1).pr, { number: 7, mergedAt: "2026-11-01T00:00:00Z", branch: "feat/a", url: "https://github.com/acme/shop/pull/7" }, "the PR is matched from the task's branch and checked on GitHub");
@@ -751,7 +758,7 @@ test("demo shows a blocked edit and a handoff in a throwaway repository and leav
   t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
   const r = cli(cwd, ["demo"]);
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /Its pre-edit hook refuses:\n     AgentBridge: claude is working on src\/cart\.js \(task "Fix cart totals", [0-9a-f]{8}, working\)/);
+  assert.match(r.stdout, /Its pre-edit hook refuses:\n     AgentBridge: claude is working on src\/cart\.js \(task "Fix cart totals", [0-9a-f]{8}, working\); last active within the hour\. Do not edit it\. Tell the user: if that work is finished, claude releases it with agentbridge task close [0-9a-f]{8}/);
   assert.match(r.stdout, /Next: Apply tax once in total\(\), then run the tests \(1 open finding below\)\n[\s\S]*Code: branch feat\/cart @ [0-9a-f]{12}, 1 commit\(s\) ahead of main, 1 file\(s\) changed: src\/cart\.js/);
   assert.match(r.stdout, /Codex edits src\/cart\.js: allowed, the task is its now\./);
   const dir = /That was (\S+) \(deleted\)/.exec(r.stdout)[1];

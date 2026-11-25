@@ -1048,6 +1048,43 @@
               },
               "hint": {
                 "type": "string"
+              },
+              "since": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "released": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "task",
+              "title",
+              "owner",
+              "pr"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pr": {
+                "type": "integer"
               }
             }
           }
