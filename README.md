@@ -50,7 +50,7 @@ You don't need `--actor`: outside an agent session you act as your GitHub login,
 
 ## How it works
 
-Each task has an owner and a scope: the paths it is changing. You don't have to list them: when an agent with one task in progress edits a file, the file joins that task. Before an agent edits a file, a hook checks the scope of every open task.
+Each task has an owner and a scope: the paths it is changing. You don't have to list them: when an agent with one task in progress edits a file, the file joins that task (shared files like `package.json` and lockfiles never do). Before an agent edits a file, a hook checks the scope of every open task.
 
 - **Someone else's open task covers the file:** the agent is told, before the edit, who holds it, for which task, when it was last active, and the command that releases it. It tells you and goes ahead. A team that wants hard locks runs `agentbridge policy ownership block`, and then the edit and the commit are refused.
 - **Its pull request merged, or it has had no activity for a day:** the file is free, and the agent is told why.
@@ -87,7 +87,7 @@ In team mode, records live on their own `agentbridge-records` branch. It's check
 ## Limits
 
 - **Not a security boundary.** Actor names come from your GitHub login, which stops casual impersonation, but anyone can edit records on their own machine. Worktrees are not sandboxes.
-- **Only Claude Code and Codex are checked at edit time.** Other tools are caught at commit, and `git commit --no-verify` skips that check. Claude Code receives the warning before the edit; whether Codex shows it to the model is not yet verified (hard blocks work in both).
+- **Only Claude Code and Codex are checked at edit time.** Other tools are caught at commit, and `git commit --no-verify` skips that check.
 - **Merged-PR release needs GitHub.** It needs a GitHub `origin` and `gh`; without them, the owner closes the task by hand.
 - **Larger teams are not qualified yet.** It's tested with two people across real clones. Edit checks take about 0.17 s at 1,000 tasks.
 - **Passing checks don't prove bug-free code.**
