@@ -218,6 +218,7 @@ test("log keeps recorded order when events share a timestamp", (t) => {
 
 test("pre-commit check blocks commits touching others' paths, whoever wrote them", (t) => {
   const cwd = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   c.addTask(cwd, "Canvas", "ok", "claude", ["src/canvas*"]);
   c.addTask(cwd, "Pay", "ok", "codex", ["src/pay.js"]);
   const commit = (env = {}) => cli(cwd, ["hook", "pre-commit"], env);
@@ -252,6 +253,7 @@ test("pre-commit check blocks commits touching others' paths, whoever wrote them
 
 test("git hook install chains in front of an existing hook and is idempotent", (t) => {
   const cwd = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   c.addTask(cwd, "Pay", "ok", "codex", ["src/pay.js"]);
   const hooks = path.join(cwd, ".git/hooks");
   const marker = path.join(cwd, "existing-ran");
@@ -363,7 +365,14 @@ if (a[0] === "pr" && a[1] === "view") {
   no(["task", "close", open, "--actor", "alice"], /No merged pull request matches .*pass --pr N/);
   no(["task", "close", open, "--pr", "x1", "--actor", "alice"], /--pr must be a pull request number/);
   no(["task", "close", onBranch, "--actor", "bob"], /Only the owner \(alice\) can close/);
-  assert.equal(co.checkPaths(cwd, "bob", ["src/a.js"]).allowed, false, "an open task holds its files");
+  const freed = co.checkPaths(cwd, "bob", ["src/a.js"]);
+  assert.equal(freed.allowed, true, "an open task whose PR merged no longer blocks others");
+  assert.deepEqual(freed.released, [{ path: "src/a.js", task: onBranch, title: "Branch work", owner: "alice", reason: "merged", pr: 7 }], "check says which merged PR released the files");
+  assert.equal(co.checkPaths(cwd, "bob", ["src/a.js"], { merged: null }).allowed, false, "without the merged-PR list the claim still holds");
+  const bobs = ab("task", "add", "Follow-up on a", "--criteria", "Works", "--actor", "bob", "--scope", "src/a.js");
+  assert.equal(ab("task", "status", bobs.id, "in_progress", "--actor", "bob").status, "in_progress", "others can claim and start on files whose task merged");
+  assert.equal(c.task(cwd, onBranch).status, "in_progress", "the merged task's record is left for its owner to close");
+  ab("task", "cancel", bobs.id, "--reason", "test", "--actor", "bob");
   const closed = ab("task", "close", onBranch, "--actor", "alice");
   assert.equal(closed.status, "merged");
   assert.deepEqual(closed.history.at(-1).pr, { number: 7, mergedAt: "2026-11-01T00:00:00Z", branch: "feat/a", url: "https://github.com/acme/shop/pull/7" }, "the PR is matched from the task's branch and checked on GitHub");
@@ -640,6 +649,7 @@ test("resume gives the next agent or person one packet: goal, next step, code, P
 
 test("resume of built work points at the pull request, and hides verification checks the task never used", (t) => {
   const cwd = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const task = c.addTask(cwd, "Search", "Finds items", "codex", ["src/search.js"]);
   c.setStatus(cwd, task.id, "in_progress", "codex");
   c.setStatus(cwd, task.id, "implemented", "codex");
@@ -746,14 +756,14 @@ else process.stdout.write(JSON.stringify(merged));`);
   assert.match(cli(cwd, []).stdout, /For people, two commands/, "without a terminal, bare agentbridge prints help");
 });
 
-test("demo shows a blocked edit and a handoff in a throwaway repository and leaves nothing behind", (t) => {
+test("demo shows an ownership warning and a handoff in a throwaway repository and leaves nothing behind", (t) => {
   const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "agentbridge-demo-home-")));
   t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
   const r = cli(cwd, ["demo"]);
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /Its pre-edit hook refuses:\n     AgentBridge: claude is working on src\/cart\.js \(task "Fix cart totals", [0-9a-f]{8}, working\)/);
+  assert.match(r.stdout, /Its pre-edit hook tells it, before the edit:\n     AgentBridge: claude is working on src\/cart\.js \(task "Fix cart totals", [0-9a-f]{8}, working\); last active within the hour\. The edit goes ahead \(ownership is advisory in this repository\)\. Tell the user/);
   assert.match(r.stdout, /Next: Apply tax once in total\(\), then run the tests \(1 open finding below\)\n[\s\S]*Code: branch feat\/cart @ [0-9a-f]{12}, 1 commit\(s\) ahead of main, 1 file\(s\) changed: src\/cart\.js/);
-  assert.match(r.stdout, /Codex edits src\/cart\.js: allowed, the task is its now\./);
+  assert.match(r.stdout, /Codex edits src\/cart\.js: no warning, the task is its now\./);
   const dir = /That was (\S+) \(deleted\)/.exec(r.stdout)[1];
   assert.equal(fs.existsSync(dir), false);
   assert.deepEqual(fs.readdirSync(cwd), [], "the directory it ran from is untouched");
@@ -761,6 +771,7 @@ test("demo shows a blocked edit and a handoff in a throwaway repository and leav
 
 test("stats counts handoffs, time to resume, blocked edits and weekly activity from local records only", (t) => {
   const cwd = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const task = c.addTask(cwd, "Cart", "ok", "claude", ["src/pay.js"]);
   c.setStatus(cwd, task.id, "in_progress", "claude");
   const hook = spawnSync(process.execPath, [path.resolve("bin/agentbridge.js"), "hook", "pre-edit", "--actor", "codex"], { cwd, encoding: "utf8", input: JSON.stringify({ cwd, tool_name: "Edit", tool_input: { file_path: path.join(cwd, "src/pay.js") } }) });

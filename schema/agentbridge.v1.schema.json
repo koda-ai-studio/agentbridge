@@ -1009,6 +1009,12 @@
         "v": {
           "const": 1
         },
+        "mode": {
+          "enum": [
+            "warn",
+            "block"
+          ]
+        },
         "actor": {
           "$ref": "#/$defs/actor"
         },
@@ -1047,6 +1053,52 @@
                 "$ref": "#/$defs/status"
               },
               "hint": {
+                "type": "string"
+              },
+              "since": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "released": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "task",
+              "title",
+              "owner",
+              "reason"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "task": {
+                "$ref": "#/$defs/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reason": {
+                "enum": [
+                  "merged",
+                  "idle"
+                ]
+              },
+              "pr": {
+                "type": "integer"
+              },
+              "since": {
                 "type": "string"
               }
             }

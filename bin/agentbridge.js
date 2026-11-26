@@ -73,73 +73,56 @@ const pr = (value) =>
     typeof value === "string" ? value : (human && summarize(value)) || JSON.stringify(value, null, 2),
   );
 const help = `AgentBridge ${version} — shared work across people and agents
-Run from the project root. In a terminal, records print as a short summary; add --json for the full record. Pipes and agents get JSON.
 For people, two commands; your agents handle the rest:
   agentbridge onboard        set up this repository (once)
   agentbridge                asks about each thing that needs you (offers, decisions, finished work,
                              merged or duplicate tasks, stalled agents), one key per answer
-When you want more: agentbridge digest (what happened since you last looked: merged, handoffs,
-  decisions, findings, open work with PRs, what waits on you; --since 7d|DATE), board (overview),
-  assign "New work" --to codex|claude|TEAMMATE, done TASK [--reason "why"], resume TASK.
-New here? agentbridge demo shows a Claude-to-Codex handoff in a throwaway repository (nothing of
-  yours changes). agentbridge stats [--since DATE] prints usage counts for pilot feedback.
-Everything below is for agents and scripts.
+When you want more:
+  digest [--since 7d|DATE]   what happened since you last looked, and what waits on you
+  board                      who is doing what
+  assign "New work" --to codex|claude|TEAMMATE    give work to an agent or offer it to a teammate
+  resume TASK                where a task stands and its next step
+  done [TASK]                close tasks whose PR merged (--reason "why" to drop one)
+  release TASK --reason "Why"   free the files of someone's stale claim
+  policy ownership warn|block   warn (default) or refuse edits to files others are working on
+  demo                       a Claude-to-Codex handoff in a throwaway repository
+Agents use: inbox, check, task add|scope|status|note, handoff offer|receive (the skill teaches them).
+Run agentbridge help all for every command, including review, test, verify and signed approvals.
+In a terminal, records print as a short summary; add --json for the full record.`;
+const helpAll = `AgentBridge ${version}: every command. Older forms still work and are marked.
 
-  onboard [--solo] [--dry-run] [--json]   (one-step setup: records, identity, commit check, skill, Claude and Codex hooks, Codex MCP)
-  init [--records-dir /abs/dir] | where | migrate | doctor
-  sync [--init] [--remote origin] [--accept-rewrite] (team records on their own branch, agentbridge-records: --init moves
-      committed .agentbridge/ there; sync commits, merges and pushes; runs on its own after changes)
-  setup                        (team clone: GitHub login as identity via gh, and the record merge driver)
-  whoami [--actor codex]       (shows the login and how an actor name resolves)
-  resolve-merge ID FIELD ours|theirs --actor NAME   (person only; settles a record merge conflict)
-  task add "Title" --criteria "Check one; Check two" --actor alice [--scope src,tests] [--ref ISSUE-KEY|URL]
-      [--to bob [--next "First step"]]   (assign: creates and offers; bob accepts with handoff receive)
-  task list | task show ID | task claim ID --actor NAME
-  task status ID in_progress|implemented|needs_work|ready_for_review --actor NAME
-  task note ID "Branch, PR, what is left" --actor NAME   (owner only, max 200 chars)
-  task scope ID src/a,src/b-* --actor NAME             (owner only; refuses paths others are working on)
-  task close ID [--pr N]          (owner or their person: its pull request merged on GitHub; releases its paths)
-  task cancel ID --reason "Why"   (owner or their person: stop without finishing; releases its paths)
-  task reassign ID --to claude --reason "Why" --actor YOU   (person only, own terminal: move a task and its paths
-      between you and your own agents, e.g. when one agent stopped mid-task; another person gets a handoff offer)
-  decision add ID "Decision" --why "Rationale" --actor NAME
-  decision propose "Project-wide decision" --why "Rationale" --actor NAME [--supersedes DECISION-ID]
-  decision accept DECISION-ID --actor NAME | decision list
-  finding add ID "Finding" --by NAME
-  finding resolve ID FINDING-ID --actor NAME --why "Resolution"
-  evidence add ID "command" pass|fail|skipped [--notes TEXT] (manual only)
-  inbox --actor NAME [--since ISO|last] [--format json|text]   (text in a terminal, JSON otherwise)
-  digest [--since last|7d|ISO] [--peek] [--format json|text]   (catch-up from records and linked PRs; default since your
-      last digest, else 7 days; --peek keeps your place)
+Coordination (people and agents)
+  inbox --actor NAME [--since ISO|last] [--format json|text]   (an agent's start-of-session view)
   check PATH... --actor NAME   (exit 1 when another owner's active scope covers a path)
-  board [--format text|json]                       (team view: owners, offers, waiting for people, attention)
-  approvals [--verify] [--json]  (every approval; --verify checks signatures against the signer's GitHub signing keys)
-  policy signed-approvals required|optional --actor NAME   (person only; required refuses unsigned approvals)
-  log [--since 7d|ISO] [--actor NAME] [--limit N] [--format text|json]   (team audit trail, newest first)
-  pr summary ID | pr publish ID --pr N   (publish posts a PR comment and an "agentbridge" commit status via gh)
-  context ID | handoff ID
-  hook pre-edit --actor NAME   (Claude Code / Codex PreToolUse hook; blocks edits to paths others own)
-  hook prompt --actor NAME     (Claude Code / Codex UserPromptSubmit hook; adds new handoffs and changes to the prompt)
-  hook install-git             (Git pre-commit check, chained before any existing hook)
-  hook pre-commit              (blocks commits touching paths others own; actor from AGENTBRIDGE_ACTOR or an <actor>/ branch)
-  mcp --actor NAME             (MCP server over stdio: inbox, check, start_task, note, handoffs)
-  handoff offer ID --actor alice --to bob --next "Review and test"
-  handoff receive ID --actor bob
-  handoff decline ID [--reason "Why"]   (the recipient) | handoff withdraw ID (who offered it, or the owner)
-  workspace create ID --actor NAME
-  workspace attach ID /absolute/worktree/path --actor NAME
-  implement ID --actor NAME --provider claude|codex [--timeout MS]
-  implement record ID --actor NAME --tool claude|codex|human|other --summary "What changed"
-  review ID --actor NAME --provider claude|codex [--timeout MS]
-  test configure ID NAME --actor NAME --argv '["node","--test"]' --criteria c1,c2 [--timeout 120000]
-  test run ID --actor NAME
-  verify ID --actor NAME
-  accept ID --actor NAME
-  recover ID --actor NAME | recover-lock write|execution
+  task add "Title" --criteria "Check one; Check two" --actor alice [--scope src,tests] [--ref ISSUE-KEY|URL] [--to bob]
+  task scope ID src/a,src/b-* | task status ID STATUS | task note ID "Branch, PR, what is left"
+  task list | task show ID | task claim ID
+  handoff offer ID --to bob --next "Review and test" | handoff receive ID
+  handoff decline ID [--reason "Why"] | handoff withdraw ID
+  done [TASK] [--reason "Why"]  (closes merged tasks; with --reason, cancels)
+  release ID --reason "Why"    (person only: free a stale claim's files; the owner sees why)
+  digest | board | resume [TASK] | log [--since 7d] [--actor NAME] | stats
+  decision propose "..." --why "..." [--supersedes ID] | decision accept ID | decision add ID "..." --why "..." | decision list
+  finding add ID "..." --by NAME | finding resolve ID FINDING-ID --why "..."
+  Older forms: task close ID [--pr N] and task cancel ID --reason (use done); task reassign and
+    task add --to (use assign); context ID and handoff ID (use resume)
 
-Execution commands launch real processes and may use provider quota. Inspect and commit
-code in the task workspace between implementation and review/test. No automatic commits,
-pushes, merges or hidden retry loops. Commands must be run only in trusted projects.`;
+Setup and records
+  onboard [--solo] [--dry-run] [--json] | init | where | migrate | doctor | setup | whoami | demo | --version
+  sync [--init] [--remote origin] [--accept-rewrite] | resolve-merge ID FIELD ours|theirs
+  policy ownership warn|block | policy signed-approvals required|optional
+  hook pre-edit|prompt --actor NAME | hook install-git | hook pre-commit | mcp --actor NAME
+
+Optional: verification and approvals (CI and PR reviews cover most teams)
+  workspace create ID | workspace attach ID /abs/path
+  implement ID --provider claude|codex | implement record ID --tool NAME --summary "..."
+  review ID --provider claude|codex
+  test configure ID NAME --argv '["node","--test"]' --criteria c1,c2 | test run ID
+  evidence add ID "command" pass|fail|skipped | verify ID | accept ID
+  approvals [--verify] | pr summary ID | pr publish ID --pr N
+  recover ID | recover-lock write|execution
+  Execution commands launch real processes and may use provider quota; run them only in trusted
+  projects. AgentBridge never commits, pushes or merges your code.`;
 try {
   for (const i of [0, 1]) if (args[i] && !args[i].startsWith("--") && args[i - 1]?.startsWith("--") !== true) args[i] = resolveTaskId(cwd, args[i]);
   switch (command) {
@@ -150,7 +133,7 @@ try {
         await guided();
         break;
       }
-      pr(help);
+      pr(args[0] === "all" ? helpAll : help);
       break;
     case "todo":
       await guided();
@@ -468,7 +451,9 @@ try {
         break;
       }
       const r = agents.preEdit(input, hookActor);
+      if (r.changed) sync.autoSync(cwd, bin, { onlyIfChanged: true });
       if (r.message) console.error(r.message);
+      if (r.context) console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: r.context } }));
       process.exitCode = r.exit;
       break;
     }
@@ -482,9 +467,17 @@ try {
       break;
     }
     case "policy": {
+      if (args[0] === "ownership" && c.ownershipModes.includes(args[1])) {
+        pr(team.setPolicy(cwd, "ownership", args[1], person()));
+        break;
+      }
       if (args[0] !== "signed-approvals" || !["required", "optional"].includes(args[1]))
-        throw Error("Use: policy signed-approvals required|optional --actor NAME");
+        throw Error("Use: policy ownership warn|block, or policy signed-approvals required|optional");
       pr(team.setApprovalPolicy(cwd, args[1], person()));
+      break;
+    }
+    case "release": {
+      pr(c.release(cwd, args[0], person(), flag("--reason")));
       break;
     }
     case "board": {
