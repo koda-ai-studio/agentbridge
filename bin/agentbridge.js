@@ -18,9 +18,35 @@ import { review } from "../lib/review.js";
 import { demo } from "../lib/demo.js";
 import { stats, statsText } from "../lib/stats.js";
 import { digest, digestText } from "../lib/digest.js";
+import { cleanupPlan, cleanup } from "../lib/cleanup.js";
+import { mergedPullRequests, mergedWork } from "../lib/merged.js";
 const version = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 const [command, ...args] = process.argv.slice(2),
   cwd = process.cwd();
+async function offerCleanup(cwd, merged, args) {
+  let plan;
+  try {
+    plan = cleanupPlan(cwd, merged);
+  } catch {
+    return;
+  }
+  for (const x of plan.keep) console.log(`  kept branch ${x.branch}${x.worktree ? ` and worktree ${x.worktree}` : ""}: ${x.why}`);
+  if (!plan.remove.length) return;
+  console.log("Their merged branches are still here:");
+  for (const x of plan.remove) console.log(`  ${x.branch}${x.worktree ? `  worktree ${x.worktree}` : ""}  (PR #${x.pr} merged)`);
+  let yes = args.includes("--clean");
+  if (!yes) {
+    if (!process.stdin.isTTY) return console.log("Remove them with: agentbridge done --clean");
+    process.stdout.write(`Remove ${plan.remove.length === 1 ? "it" : `these ${plan.remove.length}`}? Only your local copies; the pull requests keep everything. [y/N] `);
+    const answer = await new Promise((done) => process.stdin.once("data", (d) => done(String(d))));
+    process.stdin.pause();
+    yes = /^y(es)?$/i.test(answer.trim());
+  }
+  if (!yes) return console.log("Kept them.");
+  const r = cleanup(cwd, plan);
+  for (const x of r.failed) console.log(`  could not remove ${x.branch}: ${x.why}`);
+  console.log(`Removed ${r.done.length} merged branch${r.done.length === 1 ? "" : "es"}${r.done.some((x) => x.worktree) ? " and their worktrees" : ""}.`);
+}
 const flag = (name) => {
   const i = args.indexOf(name);
   if (i < 0) return "";
@@ -82,7 +108,8 @@ When you want more:
   board                      who is doing what
   assign "New work" --to codex|claude|TEAMMATE    give work to an agent or offer it to a teammate
   resume TASK                where a task stands and its next step
-  done [TASK]                close tasks whose PR merged (--reason "why" to drop one)
+  done [TASK]                close tasks whose PR merged, then offer to remove their merged
+                             branches and worktrees (--reason "why" to drop one)
   release TASK --reason "Why"   free the files of someone's stale claim
   policy ownership warn|block   warn (default) or refuse edits to files others are working on
   demo                       a Claude-to-Codex handoff in a throwaway repository
@@ -99,7 +126,8 @@ Coordination (people and agents)
   task list | task show ID | task claim ID
   handoff offer ID --to bob --next "Review and test" | handoff receive ID
   handoff decline ID [--reason "Why"] | handoff withdraw ID
-  done [TASK] [--reason "Why"]  (closes merged tasks; with --reason, cancels)
+  done [TASK] [--reason "Why"] [--yes] [--clean]  (closes merged tasks; --clean also removes their
+    local branches and clean worktrees; with --reason, cancels)
   release ID --reason "Why"    (person only: free a stale claim's files; the owner sees why)
   digest | board | resume [TASK] | log [--since 7d] [--actor NAME] | stats
   decision propose "..." --why "..." [--supersedes ID] | decision accept ID | decision add ID "..." --why "..." | decision list
@@ -355,6 +383,7 @@ try {
           }
         }
         console.log(`Closed ${closed} of ${mine.length}; their files are free.${tail}`);
+        await offerCleanup(cwd, mine, args);
         break;
       }
       const t = c.task(cwd, args[0]);
@@ -364,6 +393,8 @@ try {
       else {
         try {
           pr(team.closeMerged(cwd, t.id, a, { pr: flag("--pr"), principal }));
+          const m = mergedWork(t, mergedPullRequests(cwd));
+          if (m && (human || args.includes("--clean"))) await offerCleanup(cwd, [m], args);
         } catch (e) {
           if (/No merged pull request|Could not list merged/.test(e.message))
             throw Error(`${e.message}. To close it without a merged pull request (not needed, done elsewhere): agentbridge done ${t.id.slice(5, 13)} --reason "why"`);

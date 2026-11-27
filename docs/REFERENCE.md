@@ -169,7 +169,10 @@ Scopes are paths or folders; a trailing `*` matches by prefix (`ui/lib/graph-*`)
 | See everyone's work, what's offered, what waits for you, what's stuck | `agentbridge board` |
 | Assign work (it stays "offered" until they accept) | `agentbridge task add "Webhook retries" --criteria "Retries 3x" --actor alice --to bob --ref PROJ-7` |
 | See who did what, when | `agentbridge log --since 7d` · `agentbridge log --actor codex` |
+| Close merged work and tidy up after it | `agentbridge done` · `agentbridge done --yes --clean` |
 | Show the record on a pull request | `agentbridge pr publish TASK --pr 12` |
+
+`done` closes your tasks whose pull request merged, which frees their files. It then lists each task's local branch and worktree and asks before removing them (`--clean` skips the question). It only removes a branch when the branch's tip is already in the merged pull request and its worktree has no uncommitted changes. It never removes the branch you're on, `main`, or the records branch. Anything it keeps is listed with the reason. It only removes your local copies; it never deletes remote branches.
 
 ```text
 $ agentbridge board
