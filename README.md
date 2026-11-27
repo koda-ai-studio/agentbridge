@@ -43,7 +43,7 @@ You, in a normal terminal (not Claude Code's `!`, which runs inside the agent's 
 | `agentbridge board` | Who is doing what |
 | `agentbridge assign "New work" --to codex` | Gives work to one of your agents, or offers it to a teammate (`--to their-github-login`) |
 | `agentbridge resume TASK` | Where a task stands and its next step |
-| `agentbridge done` | Closes your tasks whose PR merged |
+| `agentbridge done` | Closes your tasks whose PR merged, then offers to remove their local branches and worktrees |
 | `agentbridge release TASK --reason "…"` | Frees the files of someone's stale claim |
 
 You don't need `--actor`: outside an agent session you act as your GitHub login, and inside one the command acts as that agent. Task ids can be shortened to 8 characters.
