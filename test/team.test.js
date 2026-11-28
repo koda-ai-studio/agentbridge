@@ -185,8 +185,9 @@ else if (args[2] === "PATCH") { list[0].body = JSON.parse(input).body; fs.writeF
   assert.match(cli(cwd, ["pr", "summary", task.id]).stdout, /### AgentBridge: Checkout/);
 });
 
-test("owners claim paths on received work; overlapping others' active work is refused", (t) => {
+test("owners claim paths on received work; with block policy, overlapping others' active work is refused", (t) => {
   const cwd = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const canvas = c.addTask(cwd, "Canvas", "ok", "claude", ["ui/lib/graph-*"]);
   const handed = team.assign(cwd, "Flaky test", "Stable", "claude", "codex");
   c.receive(cwd, handed.id, "codex");
@@ -694,16 +695,29 @@ test("the board catches two owners holding the same file (a race between clones)
     const first = c.addTask(cwd, "Pay", "ok", "claude", ["src/pay.js"]);
     c.setStatus(cwd, first.id, "in_progress", "claude");
     const second = c.addTask(cwd, "Pay again", "ok", "codex", ["src"]);
-    assert.throws(() => c.setStatus(cwd, second.id, "in_progress", "codex"), /claude claimed these files first \("Pay", [0-9a-f]{8}\)/, "starting work on files someone claimed first is refused");
     assert.equal(team.board(cwd, { merged: null }).attention.filter((a) => a.task === second.id).length, 1, "a planned overlapping claim is flagged too");
-    st.mutate(cwd, second.id, (t) => { t.status = "in_progress"; });
+    const started = c.setStatus(cwd, second.id, "in_progress", "codex");
+    assert.deepEqual(started.history.filter((e) => e.event === "overlap").map((e) => e.with[0].task), [first.id], "starting overlapping work is recorded, not refused");
     const b = team.board(cwd, { merged: null });
     const flagged = b.attention.filter((a) => a.reasons.some((x) => /also holds/.test(x)));
     assert.deepEqual(flagged.map((a) => a.task), [second.id], "only the later claim is flagged");
-    assert.match(flagged[0].reasons.join(), /claude also holds src \("Pay", claimed first\), so neither can edit it; a person keeps one: agentbridge done [0-9a-f]{8} --reason "duplicate", or hand it over: agentbridge assign [0-9a-f]{8} --to claude/);
+    assert.match(flagged[0].reasons.join(), /claude also holds src \("Pay", claimed first\), so both are warned before editing it; if it is the same work, a person keeps one: agentbridge done [0-9a-f]{8} --reason "duplicate", or hand it over: agentbridge assign [0-9a-f]{8} --to claude/);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test("with block policy, starting work on files someone claimed first is refused", (t) => {
+  const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "agentbridge-race-")));
+  t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
+  c.init(cwd);
+  team.setPolicy(cwd, "ownership", "block", "alice");
+  const first = c.addTask(cwd, "Pay", "ok", "claude", ["src/pay.js"]);
+  c.setStatus(cwd, first.id, "in_progress", "claude");
+  const second = c.addTask(cwd, "Pay again", "ok", "codex", ["src"]);
+  assert.throws(() => c.setStatus(cwd, second.id, "in_progress", "codex"), /claude claimed these files first \("Pay", [0-9a-f]{8}\)/);
+  st.mutate(cwd, second.id, (t) => { t.status = "in_progress"; });
+  assert.match(team.board(cwd, { merged: null }).attention.find((a) => a.task === second.id).reasons.join(), /so neither can edit it/);
 });
 
 test("agentbridge asks a person about each thing that needs them, one key per answer, and acts", (t) => {

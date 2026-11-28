@@ -233,8 +233,8 @@ test("a claim pulls others' claims first when records are over a minute old; off
   const last = path.join(git(bob, ["rev-parse", "--git-common-dir"]).replace(/^(?!\/)/, `${bob}/`), "agentbridge-records", "local", "last-sync");
   fs.writeFileSync(last, "2026-01-01T00:00:00.000Z");
   const r = ab(bob, "task", "add", "Also pay", "--criteria", "Pays", "--actor", "bob", "--scope", "src");
-  assert.notEqual(r.status, 0, "bob's stale clone learned of alice's claim before claiming");
-  assert.match(r.stderr, /Someone else is already working on these files: "Pay" \(alice/);
+  assert.equal(r.status, 0, "overlapping claims are not refused by default");
+  assert.match(r.stdout, /"event": "overlap"[\s\S]*"owner": "alice"/, "bob's stale clone learned of alice's claim before claiming");
 
   git(bob, ["remote", "set-url", "origin", path.join(os.tmpdir(), "agentbridge-missing-remote.git")]);
   fs.writeFileSync(last, "2026-01-01T00:00:00.000Z");
