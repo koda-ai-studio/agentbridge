@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import * as c from "../lib/core.js";
 import * as co from "../lib/coordination.js";
 import * as st from "../lib/store.js";
+import * as team from "../lib/team.js";
 import { git } from "../lib/git.js";
 import { conforms } from "./schema.js";
 
@@ -82,6 +83,7 @@ test("policy ownership block makes the hooks refuse; only a person sets it", (t)
 
 test("a claim idle for a day stops blocking edits and claims, and check says why", (t) => {
   const cwd = repo(t);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const task = c.addTask(cwd, "Fix pay", "ok", "claude", ["src/pay.js"]);
   c.setStatus(cwd, task.id, "in_progress", "claude");
   age(cwd, task.id, c.idleHours - 1);

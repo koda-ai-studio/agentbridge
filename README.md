@@ -17,7 +17,7 @@ npm install -g github:koda-ai-studio/agentbridge
 agentbridge demo
 ```
 
-The demo runs in a throwaway repository and changes nothing of yours. Claude claims a file, Codex is refused when it tries to edit it, Claude hands the task over, and Codex gets the packet it needs to continue.
+The demo runs in a throwaway repository and changes nothing of yours. Claude claims a file, Codex is warned before it edits it, Claude hands the task over, and Codex gets the packet it needs to continue.
 
 ## Set it up
 
@@ -52,7 +52,7 @@ You don't need `--actor`: outside an agent session you act as your GitHub login,
 
 Each task has an owner and a scope: the paths it is changing. You don't have to list them: when an agent with one task in progress edits a file, the file joins that task (shared files like `package.json` and lockfiles never do). Before an agent edits a file, a hook checks the scope of every open task.
 
-- **Someone else's open task covers the file:** the agent is told, before the edit, who holds it, for which task, when it was last active, and the command that releases it. It tells you and goes ahead. A team that wants hard locks runs `agentbridge policy ownership block`, and then the edit and the commit are refused.
+- **Someone else's open task covers the file:** the agent is told, before the edit, who holds it, for which task, when it was last active, and the command that releases it. It tells you and goes ahead. Two tasks may claim the same file; both are told, and the overlap is recorded. Nobody is stopped from working. A team that wants hard locks runs `agentbridge policy ownership block`, and then overlapping claims, edits and commits are refused.
 - **Its pull request merged, or it has had no activity for a day:** the file is free, and the agent is told why.
 - **The owner is you or one of your agents:** silent. `alice/claude` may edit `alice`'s files, but two agents of the same person still warn each other.
 - **Nobody holds it:** silent.

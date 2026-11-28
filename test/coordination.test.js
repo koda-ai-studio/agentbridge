@@ -372,10 +372,27 @@ test("inbox stays small on big projects: do-not-edit is capped, check still cove
   assert.equal(co.checkPaths(cwd, "codex", ["src/area59/x.js"]).allowed, false);
 });
 
-test("two agents claiming the same file: the second claim is refused, so nobody ends up blocked", async (t) => {
+test("by default a second claim on the same file goes ahead and both tasks record the overlap", async (t) => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "agentbridge-claim-"));
   t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
   c.init(cwd);
+  const first = c.addTask(cwd, "Fix pay", "ok", "claude", ["src/pay.js"], "", { exclusive: true });
+  c.setStatus(cwd, first.id, "in_progress", "claude");
+  const second = c.addTask(cwd, "Also pay", "ok", "codex", ["src/pay.js"], "", { exclusive: true });
+  const overlap = second.history.find((e) => e.event === "overlap");
+  assert.deepEqual(overlap.with, [{ task: first.id, title: "Fix pay", owner: "claude" }], "nobody is stopped; the overlap is on record");
+  const started = c.setStatus(cwd, second.id, "in_progress", "codex");
+  assert.equal(started.status, "in_progress", "starting overlapping work is not refused either");
+  const other = c.addTask(cwd, "Docs", "ok", "codex", ["docs"], "", { exclusive: true });
+  assert.ok(c.setScope(cwd, other.id, "codex", ["src"]).history.some((e) => e.event === "overlap"));
+  assert.ok(!other.history.some((e) => e.event === "overlap"), "no overlap, no event");
+});
+
+test("with policy ownership block, the second claim is refused", async (t) => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "agentbridge-claim-"));
+  t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
+  c.init(cwd);
+  team.setPolicy(cwd, "ownership", "block", "alice");
   const first = c.addTask(cwd, "Fix pay", "ok", "claude", ["src/pay.js"], "", { exclusive: true });
   c.setStatus(cwd, first.id, "in_progress", "claude");
   assert.throws(() => c.addTask(cwd, "Also pay", "ok", "codex", ["src/pay.js"], "", { exclusive: true }), /Someone else is already working on these files: "Fix pay" \(claude, [0-9a-f]{8}, src\/pay.js\)/);
